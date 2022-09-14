@@ -1,6 +1,4 @@
 import {Lifecycle} from "@hapi/hapi";
-import axios from "axios";
-import {JSDOM} from 'jsdom'
 import {parseByUrl} from "./parser";
 
 const errorResponse: Lifecycle.ReturnValue = {
@@ -9,21 +7,34 @@ const errorResponse: Lifecycle.ReturnValue = {
   message: "Argument 'url' is required"
 }
 
-export const apiHandler: Lifecycle.Method = (request) => {
+const createRow = (name: string, data: string[]) => {
+  const cellsContent = [name, ...data]
+    .map((cell) => `<td>${cell}</td>`)
+    .join('')
+
+  return `<tr>${cellsContent}</tr>`
+}
+
+const createTable = (rowNames: string[], rowData: string[][]) => {
+  const rows = rowNames
+    .map((name, i) => createRow(name, rowData[i]))
+    .join('')
+
+  return (`<table>${rows}</table>`)
+}
+
+export const apiHandler: Lifecycle.Method = (request, h) => {
   const links = typeof request.query.url === 'string'
     ? Array(request.query.url)
     : request.query.url
 
   if (!links) return errorResponse
 
-  const frequentPromises = links.map(async (link: string) => parseByUrl(link))
+  return Promise.all(links.map(async (link: string) => parseByUrl(link)))
+    .then((frequentWords: string[][]) => {
+      console.log(frequentWords)
 
-  Promise.all(frequentPromises)
-    .then((texts)=>{
-      console.log(texts)
+      return h.response(createTable(links, frequentWords))
+        .header('Content-Type', 'text/html;')
     })
-
-  // console.log(textPromises)
-
-  return 1
 }

@@ -14,6 +14,7 @@ export const parseByUrl = async (url: string) => {
       ) {
         textContent.split(/\P{L}+/u).forEach((word: string) => {
           if (word.length <= 4) return;
+          word = word.toLowerCase()
           const count = counts[word] || 0
           counts[word] = count + 1
         })
